@@ -14,8 +14,8 @@ import pytz
 import dateutil.parser
 
 from strings import STRINGS
-from utils import get_calendar_service
-from calendars import get_available_calendars
+from ..utils import get_calendar_service
+from ..calendars import get_available_calendars
 
 
 DEFAULTS = {
@@ -126,7 +126,7 @@ def pick_time_shift():
                lambda x: x if x in allowed else False)
 
 
-def wizard():
+def run_wizard():
     '''Run the complete wizard.'''
     if not validate_directory(os.getcwd()):
         print('Attempt to run the wizard from a non-writable directory')
@@ -135,26 +135,43 @@ def wizard():
     ask('welcome')
     config = {
         'cid': pick_calendar(),
-        'name': ask('name', 'Choose a name', validate_simple_string),
+        'name': ask(
+            'name',
+            'Choose a name',
+            validate_simple_string),
         'time_shift': pick_time_shift(),
-        'cache.timeout': ask('cache.timeout',
-                             'Choose an integer amount of minutes',
-                             validate_positive),
-        'cache.back': ask('cache.back', 'Choose an integer number of days',
-                          validate_positive),
-        'cache.forward': ask('cache.forward',
-                             'Choose an integer number of days',
-                             validate_positive),
-        'cache.directory': ask('cache.directory', 'Choose a directory',
-                               validate_directory),
-        'fallback.email': ask('fallback.email', 'Enter a valid email address',
-                              trust),
-        'fallback.phone': ask('fallback.phone',
-                              'Enter a valid telephone number',
-                              trust),
-        'log.directory': ask('log.directory', 'Choose a directory',
-                             validate_directory),
-        'log.level': ask('log.level', 'Choose a level', validate_log_level),
+        'cache.timeout': ask(
+            'cache.timeout',
+            'Choose an integer amount of minutes',
+            validate_positive),
+        'cache.back': ask(
+            'cache.back',
+            'Choose an integer number of days',
+            validate_positive),
+        'cache.forward': ask(
+            'cache.forward',
+            'Choose an integer number of days',
+            validate_positive),
+        'cache.directory': ask(
+            'cache.directory',
+            'Choose a directory',
+            validate_directory),
+        'fallback.email': ask(
+            'fallback.email',
+            'Enter a valid email address',
+            trust),
+        'fallback.phone': ask(
+            'fallback.phone',
+            'Enter a valid telephone number',
+            trust),
+        'log.directory': ask(
+            'log.directory',
+            'Choose a directory',
+            validate_directory),
+        'log.level': ask(
+            'log.level',
+            'Choose a level',
+            validate_log_level),
     }
     name = config['name']
     ask('done', msg_args=[name, os.getcwd()])

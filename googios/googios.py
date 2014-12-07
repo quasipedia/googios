@@ -14,13 +14,13 @@ Options:
 '''
 from docopt import docopt
 
-import wizard
+from wizard.wizard import run_wizard
 
 
 def main():
     cli = docopt(__doc__, version='0.1')
     if cli['setup']:
-        wizard.wizard()
+        run_wizard()
 
 
 if __name__ == '__main__':
