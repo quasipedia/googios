@@ -19,7 +19,7 @@ from ..calendars import get_available_calendars
 
 
 DEFAULTS = {
-    'time_shift': 0,
+    'roster.time_shift': 0,
     'cache.timeout': 10,
     'cache.back': 0,
     'cache.forward': None,
@@ -115,14 +115,14 @@ def pick_calendar():
     msg_args = '\n'.join(lines)
     question = 'Pick a number between 1 and {}'.format(counter)
     validator = lambda x: x if x in choices else False
-    selected = ask('cid', question, validator, [msg_args])
+    selected = ask('roster.cid', question, validator, [msg_args])
     return choices[selected]
 
 
 def pick_time_shift():
     '''Ruturn the time-shift for the roster.'''
     allowed = list(map(str, range(24)))
-    return ask('time_shift', 'Choose an integer value between 0 and 23',
+    return ask('roster.time_shift', 'Choose an integer value between 0 and 23',
                lambda x: x if x in allowed else False)
 
 
@@ -134,12 +134,12 @@ def run_wizard():
     logging.disable(logging.ERROR)
     ask('welcome')
     config = {
-        'cid': pick_calendar(),
-        'name': ask(
-            'name',
+        'roster.cid': pick_calendar(),
+        'roster.name': ask(
+            'roster.name',
             'Choose a name',
             validate_simple_string),
-        'time_shift': pick_time_shift(),
+        'roster.time_shift': pick_time_shift(),
         'cache.timeout': ask(
             'cache.timeout',
             'Choose an integer amount of minutes',
@@ -173,9 +173,10 @@ def run_wizard():
             'Choose a level',
             validate_log_level),
     }
-    name = config['name']
-    ask('done', msg_args=[name, os.getcwd()])
-    with open('{}.conf'.format(name), 'w') as file_:
+    name = config['roster.name']
+    config_fname = '{}.conf'.format(name)
+    ask('done', msg_args=[name, os.path.join(os.getcwd(), config_fname)])
+    with open(config_fname, 'w') as file_:
         json.dump(config, file_, sort_keys=True, indent=4)
     logging.disable(logging.NOTSET)
     return config

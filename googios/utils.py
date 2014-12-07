@@ -33,10 +33,12 @@ SCOPES = {
     'contacts': 'https://www.googleapis.com/auth/contacts.readonly',
 }
 
+# The logger default configuration is to log to console.  This is generally
+# Overridden by logging to a file, when googios is ran as a script...
 logging.basicConfig(
     format='%(asctime)s - %(levelname)-8s - %(message)s',
     level=getattr(logging, LOGGING_LEVEL))
-log = logging.getLogger(__name__)
+log = logging.getLogger('googios')
 
 # Store cached values of the service/client once initialised
 __cal_service = None

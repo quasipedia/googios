@@ -7,7 +7,7 @@ process.  It assumes that both the `2-legged.oauth` and `3-legged.oauth` files
 are in the working directory you launched the script from.
 ''',
 
-    'cid':
+    'roster.cid':
 '''
 GooGios operates on a single roster at a time (what roster to operate on
 is communicated as a command line parameter).  The following is a list of the
@@ -18,13 +18,13 @@ configuration script for.
 {}
 ''',
 
-    'name':
+    'roster.name':
 '''
 Choose a short name for the roster.  This name will be used for file naming
 too, so only ASCII letters and numbers (plus `.-_`) are allowed
 ''',
 
-    'time_shift':
+    'roster.time_shift':
 '''
 Sometimes people register shifts as 'all-day-long' events, or events
 spanning multiple days at a time.  By default these events span from midnight
@@ -93,11 +93,11 @@ Possible choices are DEBUG, INFO, WARNING, ERROR, CRITICAL
 Congratulations!  GooGios is now ready.  You can now test that the
 configuration works by issuing:
 
-    googios cache
+    googios {} check
 
 ************************************************************************
 Also: do not forget to add the cache-downloading job to your crontab!!!!
-    `googios update {} --dir={}`
+    `googios {} update`
 ************************************************************************
 ''',
 
