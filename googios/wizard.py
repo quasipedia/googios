@@ -6,6 +6,7 @@ All the functions and utilities needed to run the wizard of GooGios.
 from __future__ import print_function
 
 import os
+import json
 import string
 import logging
 
@@ -127,6 +128,9 @@ def pick_time_shift():
 
 def wizard():
     '''Run the complete wizard.'''
+    if not validate_directory(os.getcwd()):
+        print('Attempt to run the wizard from a non-writable directory')
+        exit(os.EX_IOERR)
     logging.disable(logging.ERROR)
     ask('welcome')
     config = {
@@ -152,6 +156,9 @@ def wizard():
                              validate_directory),
         'log.level': ask('log.level', 'Choose a level', validate_log_level),
     }
-    ask('done', msg_args=[config['name'], os.getcwd()])
+    name = config['name']
+    ask('done', msg_args=[name, os.getcwd()])
+    with open('{}.conf'.format(name), 'w') as file_:
+        json.dump(config, file_, sort_keys=True, indent=4)
     logging.disable(logging.NOTSET)
     return config

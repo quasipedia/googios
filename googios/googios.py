@@ -9,8 +9,9 @@ Usage:
 Options:
     -h --help        Show this screen.
     --version        Show version.
+    --dir=<DIR>      Take credentials and configuration from DIR instead of
+                     current directory.
 '''
-
 from docopt import docopt
 
 import wizard
@@ -19,8 +20,7 @@ import wizard
 def main():
     cli = docopt(__doc__, version='0.1')
     if cli['setup']:
-        from pprint import pprint
-        pprint(wizard.wizard())
+        wizard.wizard()
 
 
 if __name__ == '__main__':
