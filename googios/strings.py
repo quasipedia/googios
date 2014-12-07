@@ -7,16 +7,18 @@ process.  It assumes that both the `2-legged.oauth` and `3-legged.oauth` files
 are in the working directory you launched the script from.
 ''',
 
-    'pick_calendar':
+    'cid':
 '''
 GooGios operates on a single roster at a time (what roster to operate on
 is communicated as a command line parameter).  The following is a list of the
 rosters (Google calendars) visible with the OAuth credential given.  Enter the
 number corresponding to the calendar you would like to generate the
 configuration script for.
+
+{}
 ''',
 
-    'roster_name':
+    'name':
 '''
 Choose a short name for the roster.  This name will be used for file naming
 too, so only ASCII letters and numbers (plus `.-_`) are allowed
