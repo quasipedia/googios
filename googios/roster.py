@@ -209,13 +209,14 @@ class Roster(object):
         '''Return statistics on the roster.'''
         intervals = merge_intervals([(s.start, s.end) for s in self.data])
         stats = {
-            'roster.start': self.start,
-            'roster.end': self.end,
+            'roster.min_end': self.min_end,
+            'roster.max_start': self.max_start,
             'cache.size': len(self.data),
             'cache.fragments': len(intervals),
-            'cache.firs_hole': self.runway,
+            'cache.first_hole': self.runway,
             # The cache end is the max end of any interval
             'cache.end': sorted(intervals, key=lambda tup: tup[1])[-1][1],
+            'cache.timestamp': self.cache_timestamp,
         }
         return stats
 

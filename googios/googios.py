@@ -223,6 +223,37 @@ def runway(roster, cli):
 def status(roster, cli):
     '''Print statistics on the roster.  Exit with error code if problems.'''
     stats = roster.stats()
+    human_friendly = lambda td: (None if td is None
+                                 else td.isoformat()[:16].replace('T', ' '))
+    min_end = human_friendly(stats['roster.min_end'])
+    max_start = human_friendly(stats['roster.max_start'])
+    cache_age = datetime.datetime.now(tz=pytz.UTC) - stats['cache.timestamp']
+    cache_age = int(cache_age.total_seconds() / 60)
+    cache_size = stats['cache.size']
+    cache_end = human_friendly(stats['cache.end'])
+    if stats['cache.fragments'] == 1:
+        integrity = 'OK'
+        exit_status = os.EX_OK
+    elif stats['cache.fragments'] == 0:
+        integrity = 'Empty'
+        exit_status = os.EX_DATAERR
+    else:
+        integrity = 'Broken in {}'.format(stats['cache.fragments'])
+        exit_status = os.EX_DATAERR
+    if stats['cache.end'] == stats['cache.first_hole']:
+        first_hole = 'n/a'
+    else:
+        first_hole = human_friendly(stats['cache.first_hole'])
+    print('\n          R O S T E R   S T A T I S T I C S')
+    print('=====================================================\n\n')
+    print('  `min_end` query parameter    :  {}'.format(min_end))
+    print('  `max_start` query parameter  :  {}'.format(max_start))
+    print('  Cache age                    :  {} mins'.format(cache_age))
+    print('  Cache size                   :  {} shifts'.format(cache_size))
+    print('  Cache upper limit            :  {}'.format(cache_end))
+    print('  Cache integrity              :  {}'.format(integrity))
+    print('  Cache first hole             :  {}\n'.format(first_hole))
+    exit(exit_status)
 
 
 def main():
