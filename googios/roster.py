@@ -5,6 +5,7 @@ Manage the Shifts, combining information from both calendar and contacts.
 '''
 import os
 from datetime import datetime, timedelta
+from itertools import dropwhile
 
 import pytz
 import unicodecsv as csv
@@ -12,7 +13,8 @@ import unicodecsv as csv
 from utils import (
     log,
     dtfy,
-    plus_one_day
+    plus_one_day,
+    merge_intervals,
 )
 from calendars import Calendar
 from contacts import Person
@@ -203,6 +205,27 @@ class Roster(object):
             start = day_end
         return lines
 
+    def stats(self):
+        '''Return statistics on the roster.'''
+        intervals = merge_intervals([(s.start, s.end) for s in self.data])
+        stats = {
+            'roster.start': self.start,
+            'roster.end': self.end,
+            'cache.size': len(self.data),
+            'cache.fragments': len(intervals),
+            'cache.firs_hole': self.runway,
+            # The cache end is the max end of any interval
+            'cache.end': sorted(intervals, key=lambda tup: tup[1])[-1][1],
+        }
+        return stats
+
+    @property
+    def runway(self):
+        '''Return the the first future hole in the cache or its end.'''
+        future_shifts = list(dropwhile(lambda s: s.end < self.now, self.data))
+        intervals = merge_intervals([(s.start, s.end) for s in future_shifts])
+        return intervals[0][1]
+
     @property
     def now(self):
         '''Return the datetime of now.'''
@@ -251,26 +274,3 @@ class Roster(object):
         return ret
         log.error('No active shifts @ {}'.format(frozen_instant))
         return None
-
-    def get_last_shift(self):
-        '''Return the Shift object that is last in current calendar. Will sync if we haven't already.'''
-        if not self.have_synced:
-            self.sync()
-        last_shift = None
-        last_shift = self.shifts.pop()
-        if last_shift is None:
-            log.error("Was asked for last shift, but there are no shifts!")
-        return last_shift
-
-    def get_current_person(self):
-        '''Return the Person object associated with the Shift that is considered current. Will sync if haven't already.'''
-        if not self.have_synced:
-            self.sync()
-        current_shift = self.get_current_shift()
-        if current_shift is None:
-            log.error("Asked for on call person, but no current shift! Trying 24 hours ago.")
-            current_shift = self.get_current_shift("1 day")
-            if current_shift is None:
-                log.error("Asked for on call person, but no current shift!")
-                return None
-        return self.get_person(current_shift.title)

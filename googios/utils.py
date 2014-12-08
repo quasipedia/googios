@@ -179,3 +179,23 @@ def plus_one_day(aware_dtime):
     tomorrow = aware_dtime.replace(tzinfo=None) + datetime.timedelta(days=1)
     plus_day = tz.localize(tomorrow, is_dst=aware_dtime.dst())
     return tz.normalize(plus_day)  # to detect non-existent times
+
+
+def merge_intervals(intervals):
+    '''Given a series intervals merge together the overlapping ones.'''
+    sorted_intervals = sorted(intervals)
+    new_intervals = []
+    while sorted_intervals:
+        old = sorted_intervals.pop()
+        for counter, new in enumerate(new_intervals):
+            if old[0] <= new[0] <= old[1] or old[0] <= new[1] <= old[1]:
+                merged = (min(old[0], new[0]), max(old[1], new[1]))
+                new_intervals[counter] = merged
+                break
+        else:
+            new_intervals.append(old)
+    new_intervals.sort()
+    if intervals == new_intervals:
+        return new_intervals
+    else:
+        return merge_intervals(new_intervals)

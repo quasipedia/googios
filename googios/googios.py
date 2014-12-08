@@ -37,17 +37,26 @@ Sub- commands:
     query    All shifts between <start> and <end>, or at the <at> moment. All
              parameters are datetime.
 
-    report   Similar to query, but with shifts grouped by working day
-             (uses the time_shift value from the configuration).  By default it
-             output the report of the previous month, but this can be altered
-             with either the <start> and <end> parameters or with <fuzzy>,
-             which try to fuzzy-match expressions like "october" or "apr 2012".
-             Reports group shifts by day, taking in account the
+    report   Similar to query, but meant for human consumption and with shifts
+             grouped by working day (uses the time_shift value from the
+             configuration).
+                By default it output the report of the previous month, but this
+             can be altered with either the <start> and <end> parameters or
+             with <fuzzy>, which try to fuzzy-match expressions like "october"
+             or "apr 2012".
+                `report` groups shifts by day, taking in account the
              "roster.time_shift" parameter in the configuration file.
 
     update   Force to rebuild the cache with live data.
 
-    runway   Return the number of *full* days for which the roster is covered.
+    runway   Return the number of full days for which shifts have been
+             *cached* from now onwards.  Note that this subcommand operates on
+             the cache (i.e.: not on the live data), the rationale being that
+             `runaway` should tell you what you can count on, even in case of
+             loss of connectivity.
+                 If the time series has "holes" in it, `runway` will return
+             the number of full cached days until the first hole, even if more
+             shifts have been scheduled afterwards.
 
     status   Perform a sanity check of the roster.  Print stats and - in case
              of problems - exit with a non-zero status.
@@ -142,7 +151,7 @@ def current(roster, cli):
 
 
 def query(roster, cli):
-    '''Print a query result on screen.'''
+    '''Print a roster query result.'''
     start = cli['--start'] or cli['--at']
     end = cli['--end'] or cli['--at']
     if end < start:
@@ -154,7 +163,7 @@ def query(roster, cli):
 
 
 def report(roster, cli, time_zone):
-    '''Print a report on screen.'''
+    '''Print a human-friendly report about a time-slice of the roster.'''
     # We use datetimes even if the ultimate goal is operate at date level as
     # we need to preserve the timezone information all along
     fuzzy = cli['<fuzzy>']
@@ -207,11 +216,13 @@ def report(roster, cli, time_zone):
 
 
 def runway(roster, cli):
-    raise NotImplementedError()
+    '''Print the number of days in the future before a shift-less moment.'''
+    print (roster.runway - datetime.datetime.now(tz=pytz.UTC)).days
 
 
 def status(roster, cli):
-    raise NotImplementedError()
+    '''Print statistics on the roster.  Exit with error code if problems.'''
+    stats = roster.stats()
 
 
 def main():
