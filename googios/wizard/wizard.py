@@ -52,7 +52,7 @@ def validate_datetime(string_):
         date = dateutil.parser.parse(string_)
     except ValueError:
         return False
-    return date.replace(tzinfo=pytz.UTC).isoformat()
+    return pytz.utc.localize(date).isoformat()
 
 
 def validate_directory(string_):
@@ -123,7 +123,7 @@ def pick_time_shift():
     '''Ruturn the time-shift for the roster.'''
     allowed = list(map(str, range(24)))
     return ask('roster.time_shift', 'Choose an integer value between 0 and 23',
-               lambda x: x if x in allowed else False)
+               lambda x: int(x) if x in allowed else False)
 
 
 def run_wizard():

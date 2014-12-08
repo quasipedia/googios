@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import pytz
 import dateutil.parser
 import unicodecsv as csv
-from utils import log, AGENT_NAME
+from utils import log, dtfy
 from calendars import Calendar
 from contacts import Person
 
@@ -22,10 +22,8 @@ class Shift(object):
     as well as native Python objects'''
 
     def __init__(self, start, end, name, email, phone):
-        if not isinstance(start, datetime):
-            start = dateutil.parser.parse(start)
-        if not isinstance(end, datetime):
-            end = dateutil.parser.parse(end)
+        start = dtfy(start)
+        end = dtfy(end)
         self.start = start
         self.end = end
         self.name = name
@@ -38,6 +36,11 @@ class Shift(object):
     @property
     def as_tuple(self):
         return(self.start, self.end, self.name, self.email, self.phone)
+
+    @property
+    def as_string_tuple(self):
+        return(self.start.isoformat(), self.end.isoformat(), self.name,
+               self.email, self.phone)
 
 
 class Roster(object):
@@ -64,7 +67,7 @@ class Roster(object):
 
     def __init__(self, name, cid, cal_service_clbk, ppl_client_clbk,
                  min_end=None, max_start=None, all_day_offset=0,
-                 cache_timeout=30):
+                 cache_timeout=30, cache_directory=None):
         # Transfer params to class instance
         self.name = name
         self.cid = cid
@@ -79,10 +82,10 @@ class Roster(object):
         self.ppl_client = None
         self.calendar = None
         self._connected = False
-        cache_path = '/tmp/{}'.format(AGENT_NAME.lower())
-        if not os.path.exists(cache_path):
-            os.mkdir(cache_path)
-        self.cache_fname = '{}/{}.cache'.format(cache_path, name)
+        if cache_directory is None:
+            cache_directory = os.getcwd()
+        self.cache_fname = '{}/{}.cache'.format(cache_directory, name)
+        self.cache_fname = os.path.realpath(self.cache_fname)
         self._data = None
 
     def __iter__(self):
@@ -193,15 +196,18 @@ class Roster(object):
         if self.data is None:
             return ''
         # The mapping below is to properly handle "None"
-        return '\n'.join(('\t'.join(map(unicode, row)) for row in self.data))
+        return '\n'.join(
+            ('\t'.join(map(unicode, row.as_tuple)) for row in self.data))
 
     @property
-    def current(self, time_mod=None):
-        '''Return the first Shift object that is currently on duty.'''
+    def current(self):
+        '''Return *all* shift objects that are currently on duty.'''
         frozen_instant = self.now
+        ret = []
         for shift in self.data:
             if shift.start <= frozen_instant <= shift.end:
-                return shift
+                ret.append(shift)
+        return ret
         log.error('No active shifts @ {}'.format(frozen_instant))
         return None
 

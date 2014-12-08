@@ -76,7 +76,7 @@ class Calendar(object):
         if len(something) == 10:
             point_in_time = datetime.datetime.strptime(something, '%Y-%m-%d')
             delta = datetime.timedelta(hours=self.all_day_offset)
-            return (point_in_time.replace(tzinfo=pytz.UTC) + delta).isoformat()
+            return (pytz.utc.localize(point_in_time) + delta).isoformat()
         else:
             return something
 

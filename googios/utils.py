@@ -152,9 +152,15 @@ def get_calendar_service():
     return __cal_service
 
 
-def first_day_of_previous_month():
-    '''Return a datetime object with the first day of the previous month.'''
-    now = datetime.datetime.now()
-    ret = now.date() - dateutil.relativedelta.relativedelta(months=1)
-    ret = ret.replace(day=1)
-    return datetime.datetime(*(ret.timetuple()[:6])).replace(tzinfo=pytz.UTC)
+def dtfy(something):  # tdfy = datetime-fy
+    '''If possible, transform "something" in a datetime, tzone-aware object.'''
+    if not isinstance(something, datetime.datetime):
+        try:
+            something = dateutil.parser.parse(something)
+        except Exception as e:
+            log.error('Cannot convert "{}" to datetime'.format(something))
+            log.exception(e.message)
+            raise
+    if something.tzinfo is None:
+        something = pytz.utc.localize(something)
+    return something
