@@ -55,6 +55,7 @@ Sub- commands:
 import os
 import json
 import datetime
+from collections import defaultdict
 
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -179,9 +180,30 @@ def report(roster, cli, time_zone):
         start = now.replace(day=1) + relativedelta(months=-1)
         end = start + relativedelta(months=1, days=-1)
     data = roster.report(start, end)
+    weekdays = defaultdict(int)
+    weekends = defaultdict(int)
+    for day, people in data:
+        target = weekdays if day.weekday() < 5 else weekends
+        for person in people:
+            target[person] += 1
+    print('\n             O N - C A L L   R O S T E R')
+    print('=====================================================')
+    print('              {} - {}\n\n'.format(start.strftime('%d %b %Y'),
+                                             end.strftime('%d %b %Y')))
     for row in data:
-        print('{:<20}{}'.format(row[0].strftime('%d %b %Y, %a'),
-                                ', '.join(row[1])))
+        print('  {:<20}{}'.format(row[0].strftime('%d %b %Y, %a'),
+                                  ', '.join(row[1])))
+    print('\n\n                      SUMMARY')
+    print('-----------------------------------------------------')
+    print('  Name                    Weekdays  Weekends  Total')
+    print('-----------------------------------------------------')
+    names = sorted(list(set(weekends.keys() + weekdays.keys())))
+    template = '  {:<26}{:>3}{:>10}{:>8}'
+    for name in names:
+        wd = weekdays[name]
+        we = weekends[name]
+        print(template.format(name, wd or '-', we or '-', wd + we))
+    print('-----------------------------------------------------\n')
 
 
 def runway(roster, cli):
