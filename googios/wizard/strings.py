@@ -93,12 +93,17 @@ Possible choices are DEBUG, INFO, WARNING, ERROR, CRITICAL
 Congratulations!  GooGios is now ready.  You can now test that the
 configuration works by issuing:
 
-    googios {} check
+    googios {} status
 
-************************************************************************
-Also: do not forget to add the cache-downloading job to your crontab!!!!
+*******************************************************************************
+Remember to add the cache-downloading job to your crontab!
+
     `googios {} update`
-************************************************************************
+
+You may also wish to create nagios tests for:
+- The runaway of the log (number of assigned days left in the roster)
+- The status of the cache
+*******************************************************************************
 ''',
 
 }

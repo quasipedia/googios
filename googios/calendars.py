@@ -10,9 +10,7 @@ conflict.
 import datetime
 from collections import namedtuple
 
-import pytz
-
-from utils import log
+from utils import log, dtfy
 
 
 Event = namedtuple('Event', 'start end fuzzy_name')
@@ -43,19 +41,22 @@ class Calendar(object):
             fuzzy_name = event['summary']
             yield start, end, fuzzy_name
 
-    def get_events(self):
+    def get_events(self, min_end=None, max_start=None):
         '''Retrieve a list of events for a given timespan
 
         Arguments:
             min_end:   the minimum finishing ISO datetime for requested events.
             max_start: the maximum starting ISO datetime for requested events.
         '''
-        log.debug('Retrieving events for calendar "{}"...'.format(self.cid))
+        min_end = dtfy(min_end or self.min_end, as_iso_string=True)
+        max_start = dtfy(max_start or self.max_start, as_iso_string=True)
+        msg = 'Querying calendar for range: {} to {}'
+        log.debug(msg.format(min_end, max_start))
         events = self.service.events().list(
             calendarId=self.cid,
             singleEvents=True,
-            timeMin=self.min_end,
-            timeMax=self.max_start,
+            timeMin=min_end,
+            timeMax=max_start,
             orderBy='startTime')
         data = events.execute()
         ret = []
@@ -68,17 +69,13 @@ class Calendar(object):
 
     def fix_all_day_long_events(self, something):
         '''Shift start date of "all day long" events to match correct start.'''
-        # All-day events have start and ending dates missing the time part
-        if isinstance(something, dict):
-            something = something.get('dateTime', None) or something['date']
-        elif not isinstance(something, (str, unicode)):
-            raise ValueError('Can\'t process "{}"'.format(something))
-        if len(something) == 10:
-            point_in_time = datetime.datetime.strptime(something, '%Y-%m-%d')
-            delta = datetime.timedelta(hours=self.all_day_offset)
-            return (pytz.utc.localize(point_in_time) + delta).isoformat()
+        # All-day events have start and ending dates filed under the key 'date'
+        # rather than 'dateTime'.
+        if something['dateTime'] is not None:
+            return dtfy(something['dateTime'])
         else:
-            return something
+            date = dtfy(something['date'])
+            return date + datetime.timedelta(hours=self.all_day_offset)
 
 
 def get_available_calendars(service):

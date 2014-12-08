@@ -73,8 +73,8 @@ class Roster(object):
         self.cid = cid
         self.cal_service_clbk = cal_service_clbk
         self.ppl_client_clbk = ppl_client_clbk
-        self.min_end = min_end or self.now.isoformat()
-        self.max_start = max_start
+        self.min_end = dtfy(min_end or self.now.isoformat())
+        self.max_start = dtfy(max_start)
         self.all_day_offset = all_day_offset
         self.cache_timeout = cache_timeout
         # Initialised other properties
@@ -106,10 +106,19 @@ class Roster(object):
                 log.debug('First event in cache begins after min_end')
                 self.update_cache()
 
-    def _get_from_google(self):
+    def _get_from_google(self, start=None, end=None):
         '''Load data by querying Google APIs.'''
         log.info('Building roster for "{}" from live data'.format(self.name))
-        events = self.calendar.get_events()
+        try:
+            if not self._connected:
+                cal_service = self.cal_service_clbk()
+                self.ppl_client = self.ppl_client_clbk()
+                self.calendar = Calendar(self.cid, cal_service, self.min_end,
+                                         self.max_start, self.all_day_offset)
+        except Exception as e:
+            log.error('Fatal error while retrieving data from Google')
+            log.exception(e.message)
+        events = self.calendar.get_events(start, end)
         ppl_names = set([event.fuzzy_name for event in events])
         ppl_cache = {}
         for name in ppl_names:
@@ -126,7 +135,7 @@ class Roster(object):
             rows.append(Shift(*row))
         msg = 'Retrieved {} shifts for "{}" roster'
         log.debug(msg.format(len(rows), self.name))
-        self._data = rows
+        return rows
 
     def _save_cache(self):
         '''Save a local copy of all the future shifts in the roster.'''
@@ -143,24 +152,33 @@ class Roster(object):
             data = [Shift(*row) for row in reader]
             if not data:
                 raise ValueError('Cache is empty.')
-            if data[0].start > dateutil.parser.parse(self.min_end):
+            if data[0].start > self.min_end:
                 raise ValueError('Cache may lack early records.')
             self._data = data
 
     def update_cache(self):
         '''Update the Roster with live data.'''
         try:
-            if not self._connected:
-                cal_service = self.cal_service_clbk()
-                self.ppl_client = self.ppl_client_clbk()
-                self.calendar = Calendar(self.cid, cal_service, self.min_end,
-                                         self.max_start, self.all_day_offset)
-            self._get_from_google()
+            data = self._get_from_google()
         except Exception as e:
             log.error('Fatal error while retrieving data from Google')
             log.exception(e.message)
         else:
+            self._data = data
             self._save_cache()
+
+    def query(self, start, end):
+        '''Return all shifts in a given time bracket.'''
+        if start < self.min_end or (self.max_start and end > self.max_start):
+            msg = 'Range "{} to {}"" is outside of cache scope "{} to {}".'
+            data = (start, end, self.min_end, self.max_start)
+            args = [dtfy(x) for x in data]
+            log.warning(msg.format(*args))
+            shifts = self._get_from_google(start, end)
+        else:
+            func = lambda s: s.end > start and s.start < end
+            shifts = [shift for shift in self.data if func(shift)]
+        return shifts
 
     @property
     def now(self):
@@ -211,12 +229,13 @@ class Roster(object):
         log.error('No active shifts @ {}'.format(frozen_instant))
         return None
 
+    # Hic sunt leones
+
     def daterange(self, start_date, end_date):
         '''Generate a rangeg of dates'''
         for n in range(int((end_date - start_date).days)):
             yield start_date + datetime.timedelta(n)
 
-    # Hic sunt leones
 
     def report(self, date_from, date_to):
         '''Download calendar and show shifts during specific time period.

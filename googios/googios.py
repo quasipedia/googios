@@ -5,12 +5,12 @@ Manage your Nagios on-call roster with Google apps.
 
 Usage:
     googios setup
-    googios <roster> who [start end name email phone] [--echo]
+    googios <roster> current [start end name email phone] [--echo]
     googios <roster> query [--start=<start> --end=<end>  | --at=<at>] [--echo]
     googios <roster> report [<fuzzy> | --start=<start> --end=<end>] [--echo]
     googios <roster> update [--echo]
     googios <roster> runway [--echo]
-    googios <roster> check [--echo]
+    googios <roster> status [--echo]
 
 Options:
     -h --help          Show this screen.
@@ -29,7 +29,7 @@ The roster:
 Sub- commands:
 
     setup    Run a wizard for the configuration file generation.
-    who      Information on the current person on duty.  It is possible to
+    current  Information on the current person on duty.  It is possible to
              limit what information is given by white-listing any number of the
              5 fields (start, end, name, email, phone).
     query    All shifts between <start> and <end>, or at the <at> moment.
@@ -40,8 +40,8 @@ Sub- commands:
              which try to fuzzy-match expressions like "october" or "apr 2012".
     update   Force to rebuild the cache with live data.
     runway   Return the number of *full* days for which the roster is covered.
-    check    Perform a sanity check of the roster.  Print an informative
-             message and - in case of problems - exit with a non-zero status.
+    status   Perform a sanity check of the roster.  Print stats and - in case
+             of problems - exit with a non-zero status.
 '''
 import os
 import json
@@ -56,6 +56,7 @@ from utils import (
     log,
     get_calendar_service,
     get_people_client,
+    dtfy
 )
 
 
@@ -102,7 +103,7 @@ def get_roster(config):
     )
 
 
-def who(roster, cli):
+def current(roster, cli):
     # roster.current return a *list* of all the people on duty
     shifts = roster.current
     if len(shifts) == 1:
@@ -129,7 +130,14 @@ def who(roster, cli):
 
 
 def query(roster, cli):
-    raise NotImplementedError()
+    start = cli['--start'] or cli['--at']
+    end = cli['--end'] or cli['--at']
+    if end < start:
+        msg = 'Tried to query roster for a negative timespan ({} to {})'
+        log.error(msg.format(start, end))
+        exit(os.EX_DATAERR)
+    for shift in roster.query(start, end):
+        print '\t'.join(shift.as_string_tuple)
 
 
 def report(roster, cli):
@@ -140,12 +148,14 @@ def runway(roster, cli):
     raise NotImplementedError()
 
 
-def check(roster, cli):
+def status(roster, cli):
     raise NotImplementedError()
 
 
 def main():
     cli = docopt(__doc__, version='0.1')
+    for key in ('--start', '--end', '--at'):
+        cli[key] = None if cli[key] is None else dtfy(cli[key])
     print cli
     if cli['setup']:
         run_wizard()
@@ -153,8 +163,8 @@ def main():
     config = load_config(cli['<roster>'])
     modify_logger(config)
     roster = get_roster(config)
-    if cli['who'] is True:
-        who(roster, cli)
+    if cli['current'] is True:
+        current(roster, cli)
     elif cli['query'] is True:
         query(roster, cli)
     elif cli['report'] is True:
@@ -163,8 +173,8 @@ def main():
         roster.update_cache()
     elif cli['runway'] is True:
         runway(roster, cli)
-    elif cli['check'] is True:
-        check(roster, cli)
+    elif cli['status'] is True:
+        status(roster, cli)
     else:
         log.critical('Something is odd, you should never hit this point...')
         exit(os.EX_SOFTWARE)

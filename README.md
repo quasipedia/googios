@@ -96,7 +96,7 @@ to contact somebody because of a problem).  However one of the problems
 detected may well be lack of connectivity, so you should have a cronjob
 explicitly updating the cache from time to time.
 
-    googios update <your-roster-name>
+    googios <your-roster-config-file> update
 
 
 Nagios setup
@@ -127,4 +127,4 @@ precisely this conditions.
 Acknowledgments
 ---------------
 
-The idea and the overall design of GooGios comes from Martin Melin's NagCal.
+GooGios features are mostly a reimplementation of Martin Melin's NagCal.

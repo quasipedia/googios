@@ -152,8 +152,10 @@ def get_calendar_service():
     return __cal_service
 
 
-def dtfy(something):  # tdfy = datetime-fy
+def dtfy(something, as_iso_string=False):  # tdfy = datetime-fy
     '''If possible, transform "something" in a datetime, tzone-aware object.'''
+    if something is None:
+        return None
     if not isinstance(something, datetime.datetime):
         try:
             something = dateutil.parser.parse(something)
@@ -163,4 +165,6 @@ def dtfy(something):  # tdfy = datetime-fy
             raise
     if something.tzinfo is None:
         something = pytz.utc.localize(something)
+    if as_iso_string:
+        return something.isoformat()
     return something
