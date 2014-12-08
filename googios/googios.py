@@ -57,7 +57,6 @@ import json
 import datetime
 
 import pytz
-import dateutil.parser
 from dateutil.relativedelta import relativedelta
 from docopt import docopt
 
@@ -153,14 +152,15 @@ def query(roster, cli):
         print '\t'.join(shift.as_string_tuple)
 
 
-def report(roster, cli):
+def report(roster, cli, time_zone):
     '''Print a report on screen.'''
-    datify = lambda x: dateutil.parser.parse(x).date()
+    # We use datetimes even if the ultimate goal is operate at date level as
+    # we need to preserve the timezone information all along
     fuzzy = cli['<fuzzy>']
     # Fuzzy should be interpreted as always indicating a month.
     if fuzzy:
         try:
-            start = datify(fuzzy).replace(day=1)
+            start = fuzzy.replace(day=1)
             end = start + relativedelta(months=1, days=-1)
         except Exception as e:
             log.critical('Cannot parse <fuzzy> parameter "{}"'.format(fuzzy))
@@ -168,14 +168,15 @@ def report(roster, cli):
             raise
     # A range can be whatever
     elif cli['<start>']:
-        start = datify(cli['<start>'])
-        end = datify(cli['<end>'])
+        start = cli['<start>']
+        end = cli['<end>']
         if start > end:
             msg = 'Tried to generate a report for negative timespan ({} to {})'
             log.critical(msg.format(start, end))
             exit(os.EX_DATAERR)
     else:
-        start = datetime.date.today().replace(day=1) + relativedelta(months=-1)
+        now = datetime.datetime.now(tz=pytz.timezone(time_zone))
+        start = now.replace(day=1) + relativedelta(months=-1)
         end = start + relativedelta(months=1, days=-1)
     data = roster.report(start, end)
     for row in data:
@@ -192,13 +193,13 @@ def status(roster, cli):
 
 def main():
     cli = docopt(__doc__, version='0.1')
-    for key in ('--start', '--end', '--at'):
-        cli[key] = None if cli[key] is None else dtfy(cli[key])
-    print cli
+    config = load_config(cli['<roster>'])
+    for key in ('--start', '--end', '--at', '<start>', '<end>', '<fuzzy>'):
+        if cli[key] is not None:
+            cli[key] = dtfy(cli[key], tz=config['roster.time_zone'])
     if cli['setup']:
         run_wizard()
         exit(os.EX_OK)
-    config = load_config(cli['<roster>'])
     modify_logger(config)
     roster = get_roster(config)
     if cli['current'] is True:
@@ -206,7 +207,7 @@ def main():
     elif cli['query'] is True:
         query(roster, cli)
     elif cli['report'] is True:
-        report(roster, cli)
+        report(roster, cli, config['roster.time_zone'])
     elif cli['update']:
         roster.update_cache()
     elif cli['runway'] is True:

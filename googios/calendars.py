@@ -31,6 +31,7 @@ class Calendar(object):
         self.min_end = min_end
         self.max_start = max_start
         self.all_day_offset = all_day_offset
+        self.__timezone = False  # `None` may be a valid timezone setting
 
     def __iter__(self):
         '''Iterate on all the events in the calendar.'''
@@ -76,6 +77,13 @@ class Calendar(object):
         else:
             date = dtfy(something['date'])
             return date + datetime.timedelta(hours=self.all_day_offset)
+
+    @property
+    def timezone(self):
+        if self.__timezone is False:
+            tzone = self.service.settings().get(setting='timezone').execute()
+            self.__timezone = tzone['value']
+        return self.__timezone
 
 
 def get_available_calendars(service):

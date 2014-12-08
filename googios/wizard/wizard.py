@@ -116,7 +116,9 @@ def pick_calendar():
     question = 'Pick a number between 1 and {}'.format(counter)
     validator = lambda x: x if x in choices else False
     selected = ask('roster.cid', question, validator, [msg_args])
-    return choices[selected]
+    cid = choices[selected]
+    tzone = cal_service.calendars().get(calendarId=cid).execute()['timeZone']
+    return cid, tzone
 
 
 def pick_time_shift():
@@ -133,8 +135,10 @@ def run_wizard():
         exit(os.EX_IOERR)
     logging.disable(logging.ERROR)
     ask('welcome')
+    cid, tzone = pick_calendar()
     config = {
-        'roster.cid': pick_calendar(),
+        'roster.cid': cid,
+        'roster.time_zone': tzone,
         'roster.name': ask(
             'roster.name',
             'Choose a name',

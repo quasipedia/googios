@@ -152,7 +152,7 @@ def get_calendar_service():
     return __cal_service
 
 
-def dtfy(something, as_iso_string=False):  # tdfy = datetime-fy
+def dtfy(something, tz=None, as_iso_string=False):  # tdfy = datetime-fy
     '''If possible, transform "something" in a datetime, tzone-aware object.'''
     if something is None:
         return None
@@ -164,7 +164,18 @@ def dtfy(something, as_iso_string=False):  # tdfy = datetime-fy
             log.exception(e.message)
             raise
     if something.tzinfo is None:
-        something = pytz.utc.localize(something)
+        if tz is None:
+            something = pytz.utc.localize(something)
+        else:
+            something = pytz.timezone(tz).localize(something)
     if as_iso_string:
         return something.isoformat()
     return something
+
+
+def plus_one_day(aware_dtime):
+    '''Compute the datetime of the following day accounting for DTS.'''
+    tz = aware_dtime.tzinfo
+    tomorrow = aware_dtime.replace(tzinfo=None) + datetime.timedelta(days=1)
+    plus_day = tz.localize(tomorrow, is_dst=aware_dtime.dst())
+    return tz.normalize(plus_day)  # to detect non-existent times

@@ -8,7 +8,12 @@ from datetime import datetime, timedelta
 
 import pytz
 import unicodecsv as csv
-from utils import log, dtfy
+
+from utils import (
+    log,
+    dtfy,
+    plus_one_day
+)
 from calendars import Calendar
 from contacts import Person
 
@@ -182,17 +187,20 @@ class Roster(object):
     def report(self, start, end):
         '''Return a report in the form [(date, [persA, persB, ...]), ...]'''
         # `report` works with dates/days not times, so we discard time info...
+        start = start.tzinfo.normalize(start)
+        end = end.tzinfo.normalize(end)
         offset = timedelta(hours=self.all_day_offset)
-        one_day = timedelta(days=1)
-        datify = lambda x: datetime(x.year, x.month, x.day, tzinfo=pytz.UTC)
-        start = datify(start) + offset
+        datify = lambda x: datetime(x.year, x.month, x.day,
+                                    tzinfo=x.tzinfo) + offset
+        start = datify(start)
         # We want the report to be inclusive of both start and end, so end +1
-        end = datify(end) + offset + one_day
+        end = datify(end)
         lines = []
-        while start < end:
-            shifts = self.query(start, start + one_day)
+        while start <= end:
+            day_end = plus_one_day(start)
+            shifts = self.query(start, day_end)
             lines.append((start.date(), [shift.name for shift in shifts]))
-            start = start + one_day
+            start = day_end
         return lines
 
     @property
