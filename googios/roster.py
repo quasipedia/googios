@@ -7,7 +7,6 @@ import os
 from datetime import datetime, timedelta
 
 import pytz
-import dateutil.parser
 import unicodecsv as csv
 from utils import log, dtfy
 from calendars import Calendar
@@ -180,6 +179,22 @@ class Roster(object):
             shifts = [shift for shift in self.data if func(shift)]
         return shifts
 
+    def report(self, start, end):
+        '''Return a report in the form [(date, [persA, persB, ...]), ...]'''
+        # `report` works with dates/days not times, so we discard time info...
+        offset = timedelta(hours=self.all_day_offset)
+        one_day = timedelta(days=1)
+        datify = lambda x: datetime(x.year, x.month, x.day, tzinfo=pytz.UTC)
+        start = datify(start) + offset
+        # We want the report to be inclusive of both start and end, so end +1
+        end = datify(end) + offset + one_day
+        lines = []
+        while start < end:
+            shifts = self.query(start, start + one_day)
+            lines.append((start.date(), [shift.name for shift in shifts]))
+            start = start + one_day
+        return lines
+
     @property
     def now(self):
         '''Return the datetime of now.'''
@@ -228,61 +243,6 @@ class Roster(object):
         return ret
         log.error('No active shifts @ {}'.format(frozen_instant))
         return None
-
-    # Hic sunt leones
-
-    def daterange(self, start_date, end_date):
-        '''Generate a rangeg of dates'''
-        for n in range(int((end_date - start_date).days)):
-            yield start_date + datetime.timedelta(n)
-
-
-    def report(self, date_from, date_to):
-        '''Download calendar and show shifts during specific time period.
-
-        Returns:
-            List with date and shift name.'''
-        start_split = date_from.split("-")
-        end_split = date_to.split("-")
-        start_date = datetime.datetime(int(start_split[0]), int(start_split[1]), int(start_split[2]), (int(self.ade_offset_hours) + 3), 0, 0, 0, UTC())
-        end_date = datetime.datetime(int(end_split[0]), int(end_split[1]), int(end_split[2]), (int(self.ade_offset_hours) + 3), 0, 0, 0, UTC())
-        result = {}
-
-        try:
-            client = self.get_calendar_client()
-            query = gdata.calendar.client.CalendarEventQuery()
-            query.start_min = date_from
-            query.start_max = date_to
-            query.max_results = 200
-            event_feed = client.GetCalendarEventFeed(uri=self.calendar_url, q=query)
-
-            shifts = []
-            for event in event_feed.entry:
-                shifts.append(Shift(
-                    event.title.text.encode("utf-8"),
-                    parse_date(self.parse_shift_date(event.when[0].start)),
-                    parse_date(self.parse_shift_date(event.when[0].end))
-                ))
-
-            ordered_shifts = sorted(shifts, key=attrgetter('start'))
-            current_shift = None
-
-            for current_date in self.daterange(start_date, end_date):
-                current_shift = None
-                for shift in ordered_shifts:
-                    if current_date >= shift.start and current_date <= shift.end:
-                        current_shift = shift
-                        break
-                name = None
-                if current_shift:
-                    name = current_shift.title
-                result["%s" % current_date] = name
-
-            return result
-
-        except Exception, e:
-            log.exception(e)
-            return {}
 
     def get_last_shift(self):
         '''Return the Shift object that is last in current calendar. Will sync if we haven't already.'''

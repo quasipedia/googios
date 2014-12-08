@@ -7,7 +7,7 @@ Usage:
     googios setup
     googios <roster> current [start end name email phone] [--echo]
     googios <roster> query [--start=<start> --end=<end>  | --at=<at>] [--echo]
-    googios <roster> report [<fuzzy> | --start=<start> --end=<end>] [--echo]
+    googios <roster> report [<fuzzy> | <start> <end>] [--echo]
     googios <roster> update [--echo]
     googios <roster> runway [--echo]
     googios <roster> status [--echo]
@@ -29,17 +29,26 @@ The roster:
 Sub- commands:
 
     setup    Run a wizard for the configuration file generation.
+
     current  Information on the current person on duty.  It is possible to
              limit what information is given by white-listing any number of the
              5 fields (start, end, name, email, phone).
-    query    All shifts between <start> and <end>, or at the <at> moment.
+
+    query    All shifts between <start> and <end>, or at the <at> moment. All
+             parameters are datetime.
+
     report   Similar to query, but with shifts grouped by working day
              (uses the time_shift value from the configuration).  By default it
              output the report of the previous month, but this can be altered
-             with either the <start> and <end> parameters or with <magic>,
+             with either the <start> and <end> parameters or with <fuzzy>,
              which try to fuzzy-match expressions like "october" or "apr 2012".
+             Reports group shifts by day, taking in account the
+             "roster.time_shift" parameter in the configuration file.
+
     update   Force to rebuild the cache with live data.
+
     runway   Return the number of *full* days for which the roster is covered.
+
     status   Perform a sanity check of the roster.  Print stats and - in case
              of problems - exit with a non-zero status.
 '''
@@ -48,6 +57,8 @@ import json
 import datetime
 
 import pytz
+import dateutil.parser
+from dateutil.relativedelta import relativedelta
 from docopt import docopt
 
 from roster import Roster, Shift
@@ -104,6 +115,7 @@ def get_roster(config):
 
 
 def current(roster, cli):
+    '''Print information on the current shift in the roster.'''
     # roster.current return a *list* of all the people on duty
     shifts = roster.current
     if len(shifts) == 1:
@@ -130,18 +142,44 @@ def current(roster, cli):
 
 
 def query(roster, cli):
+    '''Print a query result on screen.'''
     start = cli['--start'] or cli['--at']
     end = cli['--end'] or cli['--at']
     if end < start:
         msg = 'Tried to query roster for a negative timespan ({} to {})'
-        log.error(msg.format(start, end))
+        log.critical(msg.format(start, end))
         exit(os.EX_DATAERR)
     for shift in roster.query(start, end):
         print '\t'.join(shift.as_string_tuple)
 
 
 def report(roster, cli):
-    raise NotImplementedError()
+    '''Print a report on screen.'''
+    datify = lambda x: dateutil.parser.parse(x).date()
+    fuzzy = cli['<fuzzy>']
+    # Fuzzy should be interpreted as always indicating a month.
+    if fuzzy:
+        try:
+            start = datify(fuzzy).replace(day=1)
+            end = start + relativedelta(months=1, days=-1)
+        except Exception as e:
+            log.critical('Cannot parse <fuzzy> parameter "{}"'.format(fuzzy))
+            log.exception(e.message)
+            raise
+    # A range can be whatever
+    elif cli['<start>']:
+        start = datify(cli['<start>'])
+        end = datify(cli['<end>'])
+        if start > end:
+            msg = 'Tried to generate a report for negative timespan ({} to {})'
+            log.critical(msg.format(start, end))
+            exit(os.EX_DATAERR)
+    else:
+        start = datetime.date.today().replace(day=1) + relativedelta(months=-1)
+        end = start + relativedelta(months=1, days=-1)
+    data = roster.report(start, end)
+    for row in data:
+        print('{:<20}{}'.format(row[0].isoformat(), ', '.join(row[1])))
 
 
 def runway(roster, cli):
