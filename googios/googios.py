@@ -180,7 +180,8 @@ def report(roster, cli, time_zone):
         end = start + relativedelta(months=1, days=-1)
     data = roster.report(start, end)
     for row in data:
-        print('{:<20}{}'.format(row[0].isoformat(), ', '.join(row[1])))
+        print('{:<20}{}'.format(row[0].strftime('%d %b %Y, %a'),
+                                ', '.join(row[1])))
 
 
 def runway(roster, cli):
