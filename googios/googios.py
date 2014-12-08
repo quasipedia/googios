@@ -123,7 +123,7 @@ def get_roster(config):
     )
 
 
-def current(roster, cli):
+def current(roster, cli, config):
     '''Print information on the current shift in the roster.'''
     # roster.current return a *list* of all the people on duty
     shifts = roster.current
@@ -133,7 +133,7 @@ def current(roster, cli):
         log.error('Nobody is on duty.')
         now = datetime.datetime.now(tz=pytz.UTC)
         current = Shift(now, now, 'Fallback Team',
-                        cli['fallback.email'], cli['fallback.phone'])
+                        config['fallback.email'], config['fallback.phone'])
     else:
         log.error('Several people where on duty, picking the first one.')
         for counter, shift in enumerate(shifts, 1):
@@ -150,7 +150,7 @@ def current(roster, cli):
     print('\t'.join(bits))
 
 
-def query(roster, cli):
+def query(roster, cli, config):
     '''Print a roster query result.'''
     start = cli['--start'] or cli['--at']
     end = cli['--end'] or cli['--at']
@@ -162,8 +162,9 @@ def query(roster, cli):
         print '\t'.join(shift.as_string_tuple)
 
 
-def report(roster, cli, time_zone):
+def report(roster, cli, config):
     '''Print a human-friendly report about a time-slice of the roster.'''
+    time_zone = config['roster.time_zone']
     # We use datetimes even if the ultimate goal is operate at date level as
     # we need to preserve the timezone information all along
     fuzzy = cli['<fuzzy>']
@@ -215,12 +216,12 @@ def report(roster, cli, time_zone):
     print('-----------------------------------------------------\n')
 
 
-def runway(roster, cli):
+def runway(roster, cli, config):
     '''Print the number of days in the future before a shift-less moment.'''
     print (roster.runway - datetime.datetime.now(tz=pytz.UTC)).days
 
 
-def status(roster, cli):
+def status(roster, cli, config):
     '''Print statistics on the roster.  Exit with error code if problems.'''
     stats = roster.stats()
     human_friendly = lambda td: (None if td is None
@@ -242,6 +243,8 @@ def status(roster, cli):
         exit_status = os.EX_DATAERR
     if stats['cache.end'] == stats['cache.first_hole']:
         first_hole = 'n/a'
+    elif stats['cache.first_hole'] < datetime.datetime.now(tz=pytz.UTC):
+        first_hole = 'Right now'
     else:
         first_hole = human_friendly(stats['cache.first_hole'])
     print('\n          R O S T E R   S T A T I S T I C S')
@@ -268,17 +271,17 @@ def main():
     modify_logger(config)
     roster = get_roster(config)
     if cli['current'] is True:
-        current(roster, cli)
+        current(roster, cli, config)
     elif cli['query'] is True:
-        query(roster, cli)
+        query(roster, cli, config)
     elif cli['report'] is True:
-        report(roster, cli, config['roster.time_zone'])
+        report(roster, cli, config)
     elif cli['update']:
         roster.update_cache()
     elif cli['runway'] is True:
-        runway(roster, cli)
+        runway(roster, cli, config)
     elif cli['status'] is True:
-        status(roster, cli)
+        status(roster, cli, config)
     else:
         log.critical('Something is odd, you should never hit this point...')
         exit(os.EX_SOFTWARE)

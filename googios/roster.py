@@ -27,7 +27,7 @@ class Shift(object):
     The class has a "smart" initialisation that can accept both textual data
     as well as native Python objects'''
 
-    def __init__(self, start, end, name, email, phone):
+    def __init__(self, start, end, name=None, email=None, phone=None):
         start = dtfy(start)
         end = dtfy(end)
         self.start = start
@@ -225,6 +225,8 @@ class Roster(object):
         '''Return the the first future hole in the cache or its end.'''
         future_shifts = list(dropwhile(lambda s: s.end < self.now, self.data))
         intervals = merge_intervals([(s.start, s.end) for s in future_shifts])
+        if intervals[0][0] > self.now:
+            return self.now
         return intervals[0][1]
 
     @property
