@@ -65,6 +65,7 @@ import os
 import json
 import logging
 import datetime
+from random import choice
 from collections import defaultdict
 
 import pytz
@@ -147,10 +148,10 @@ def current(roster, cli, config):
         current = Shift(now, now, 'Fallback Team',
                         config['fallback.email'], config['fallback.phone'])
     else:
-        log.error('Several people where on duty, picking the first one.')
+        log.error('Several people where on duty, picking a random one.')
         for counter, shift in enumerate(shifts, 1):
             log.error('On duty #{}: {}'.format(counter, shift))
-        current = shifts[0]
+        current = choice(shifts)
     # Compute what fields to output
     fields = ('start', 'end', 'name', 'email', 'phone')
     mask = []

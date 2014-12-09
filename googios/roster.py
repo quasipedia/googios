@@ -177,10 +177,10 @@ class Roster(object):
             log.warning('Cache update failed, using stale cache instead.')
             try:
                 self.load_cache()
-            except ValueError:
+            except (IOError, ValueError):
                 msg = 'Cannot connect to Google nor load cache. Panic!'
                 log.critical(msg)
-                raise
+                exit(os.EX_IOERR)
 
     def query(self, start, end):
         '''Return all shifts in a given time bracket.'''
