@@ -106,24 +106,21 @@ class Roster(object):
             try:
                 self.load_cache()
             except IOError:
-                log.debug('File {} does not exists'.format(self.cache_fname))
+                msg = 'Cannot load cache file "{}", try updating.'
+                log.debug(msg.format(self.cache_fname))
                 self.update_cache()
             except ValueError:
-                log.debug('First event in cache begins after min_end')
+                log.debug('Trying to update the cache.')
                 self.update_cache()
 
-    def _get_from_google(self, start=None, end=None):
+    def _retrieve_live(self, start, end):
         '''Load data by querying Google APIs.'''
-        log.info('Building roster for "{}" from live data'.format(self.name))
-        try:
-            if not self._connected:
-                cal_service = self.cal_service_clbk()
-                self.ppl_client = self.ppl_client_clbk()
-                self.calendar = Calendar(self.cid, cal_service, self.min_end,
-                                         self.max_start, self.all_day_offset)
-        except Exception as e:
-            log.error('Fatal error while retrieving data from Google')
-            log.exception(e.message)
+        log.info('Retrieving live data for roster: "{}"'.format(self.name))
+        if not self._connected:
+            cal_service = self.cal_service_clbk()
+            self.ppl_client = self.ppl_client_clbk()
+            self.calendar = Calendar(self.cid, cal_service, self.min_end,
+                                     self.max_start, self.all_day_offset)
         events = self.calendar.get_events(start, end)
         ppl_names = set([event.fuzzy_name for event in events])
         ppl_cache = {}
@@ -143,6 +140,14 @@ class Roster(object):
         log.debug(msg.format(len(rows), self.name))
         return rows
 
+    def _get_from_google(self, start=None, end=None):
+        '''A wrapper that catches any I/O exception and keep going.'''
+        try:
+            return self._retrieve_live(start, end)
+        except Exception as e:
+            msg = 'Fatal error while retrieving data from Google: {}'
+            log.error(msg.format(e.__class__.__name__))
+
     def _save_cache(self):
         '''Save a local copy of all the future shifts in the roster.'''
         with open(self.cache_fname, 'wb') as file_:
@@ -157,21 +162,25 @@ class Roster(object):
             reader = csv.reader(file_, delimiter='\t', quoting=csv.QUOTE_NONE)
             data = [Shift(*row) for row in reader]
             if not data:
+                log.error('Cache is empty')
                 raise ValueError('Cache is empty.')
-            if data[0].start > self.min_end:
-                raise ValueError('Cache may lack early records.')
             self._data = data
 
     def update_cache(self):
         '''Update the Roster with live data.'''
-        try:
-            data = self._get_from_google()
-        except Exception as e:
-            log.error('Fatal error while retrieving data from Google')
-            log.exception(e.message)
-        else:
+        data = self._get_from_google()
+        # If the previous operation fails, use cached data.
+        if data:
             self._data = data
             self._save_cache()
+        else:
+            log.warning('Cache update failed, using stale cache instead.')
+            try:
+                self.load_cache()
+            except ValueError:
+                msg = 'Cannot connect to Google nor load cache. Panic!'
+                log.critical(msg)
+                raise
 
     def query(self, start, end):
         '''Return all shifts in a given time bracket.'''

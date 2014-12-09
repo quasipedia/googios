@@ -88,7 +88,7 @@ def trust(string_):
 
 def ask(string_id, question=None, validator=None, msg_args=()):
     '''Helper for display messages/asking questions.'''
-    print('\n', STRINGS[string_id].format(*msg_args).strip(), '\n')
+    print('\n{}\n'.format(STRINGS[string_id].format(*msg_args).strip()))
     if question is None:
         return
     if string_id in DEFAULTS:

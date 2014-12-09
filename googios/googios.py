@@ -273,13 +273,13 @@ def status(roster, cli, config):
 
 def main():
     cli = docopt(__doc__, version='0.1')
+    if cli['setup']:
+        run_wizard()
+        exit(os.EX_OK)
     config = load_config(cli['<roster>'])
     for key in ('--start', '--end', '--at', '<start>', '<end>', '<fuzzy>'):
         if cli[key] is not None:
             cli[key] = dtfy(cli[key], tz=config['roster.time_zone'])
-    if cli['setup']:
-        run_wizard()
-        exit(os.EX_OK)
     modify_logger(cli, config)
     roster = get_roster(config)
     if cli['current'] is True:
