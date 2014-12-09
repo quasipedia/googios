@@ -184,8 +184,10 @@ def run_wizard():
     }
     name = config['roster.name']
     config_fname = '{}.conf'.format(name)
-    ask('done', msg_args=[name, os.path.join(os.getcwd(), config_fname)])
+    from ..googios import get_roster  # Avoid circular import
+    get_roster(config).update_cache()
     with open(config_fname, 'w') as file_:
         json.dump(config, file_, sort_keys=True, indent=4)
+    ask('done', msg_args=[name, os.path.join(os.getcwd(), config_fname)])
     logging.disable(logging.NOTSET)
     return config
