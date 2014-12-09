@@ -63,6 +63,7 @@ Sub- commands:
 '''
 import os
 import json
+import logging
 import datetime
 from collections import defaultdict
 
@@ -74,6 +75,8 @@ from roster import Roster, Shift
 from wizard.wizard import run_wizard
 from utils import (
     log,
+    log_format,
+    log_stream_handler,
     get_calendar_service,
     get_people_client,
     dtfy
@@ -96,9 +99,18 @@ def load_config(string_):
         exit(os.EX_DATAERR)
 
 
-def modify_logger(configuration):
+def modify_logger(cli, config):
     '''Modify the logger so as '''
-    log.error('Logging modification yet implemented')
+    if cli['--echo']:
+        return
+    log.removeHandler(log_stream_handler)
+    log_level = config['log.level']
+    log_dir = config['log.directory']
+    log_fname = os.path.join(log_dir, '{}.log'.format(config['roster.name']))
+    log_file_handler = logging.FileHandler(log_fname)
+    log_file_handler.setFormatter(log_format)
+    log.addHandler(log_file_handler)
+    log.setLevel(log_level)
 
 
 def get_roster(config):
@@ -268,7 +280,7 @@ def main():
     if cli['setup']:
         run_wizard()
         exit(os.EX_OK)
-    modify_logger(config)
+    modify_logger(cli, config)
     roster = get_roster(config)
     if cli['current'] is True:
         current(roster, cli, config)

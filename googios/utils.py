@@ -35,10 +35,11 @@ SCOPES = {
 
 # The logger default configuration is to log to console.  This is generally
 # Overridden by logging to a file, when googios is ran as a script...
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)-8s - %(message)s',
-    level=getattr(logging, LOGGING_LEVEL))
+log_format = logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s')
+log_stream_handler = logging.StreamHandler()
+log_stream_handler.setFormatter(log_format)
 log = logging.getLogger('googios')
+log.addHandler(log_stream_handler)
 
 # Store cached values of the service/client once initialised
 __cal_service = None
