@@ -26,7 +26,7 @@ MockArgparseFlags = namedtuple(
 
 # The logging level must be a string because of the poor API design choices of
 # by Google Inc. (See: http://goo.gl/8yOJeq)
-LOGGING_LEVEL = 'DEBUG'
+LOGGING_LEVEL = 'INFO'
 AGENT_NAME = 'GooGios'
 SCOPES = {
     'calendar': 'https://www.googleapis.com/auth/calendar.readonly',
@@ -40,6 +40,7 @@ log_stream_handler = logging.StreamHandler()
 log_stream_handler.setFormatter(log_format)
 log = logging.getLogger('googios')
 log.addHandler(log_stream_handler)
+log.setLevel(LOGGING_LEVEL)
 
 # Store cached values of the service/client once initialised
 __cal_service = None
@@ -130,12 +131,13 @@ class ThreeLeggedOauth(object):
         return client
 
 
-def get_people_client():
+def get_people_client(oauth_dir=''):
     '''Ruturn a client for the contacts API.'''
     global __ppl_client
+    oauth_fname = os.path.join(oauth_dir, '3-legged.oauth')
     if __ppl_client is None:
         log.debug('Generating "contacts" client...')
-        credentials = ThreeLeggedOauth.get_credentials('3-legged.oauth')
+        credentials = ThreeLeggedOauth.get_credentials(oauth_fname)
         if credentials.invalid:
             log.critical('Invalid 3-legged credentials')
             exit(os.EX_CONFIG)
@@ -143,12 +145,13 @@ def get_people_client():
     return __ppl_client
 
 
-def get_calendar_service():
+def get_calendar_service(oauth_dir=''):
     '''Ruturn a service for the calendar API.'''
     global __cal_service
+    oauth_fname = os.path.join(oauth_dir, '2-legged.oauth')
     if __cal_service is None:
         log.debug('Generating the "calendar" service...')
-        http_auth = TwoLeggedOauth.get_http_auth('2-legged.oauth')
+        http_auth = TwoLeggedOauth.get_http_auth(oauth_fname)
         __cal_service = TwoLeggedOauth.get_service('calendar', 'v3', http_auth)
     return __cal_service
 

@@ -83,6 +83,7 @@ import json
 import logging
 import datetime
 from random import choice
+from functools import partial
 from collections import defaultdict
 
 import pytz
@@ -105,12 +106,16 @@ def load_config(string_):
     '''Load configuration from file.'''
     try:
         with open('{}.conf'.format(string_)) as file_:
-            return json.load(file_)
+            config = json.load(file_)
+            config['oauth.directory'] = os.path.dirname(string_)
+            return config
     except IOError:
         pass
     try:
         with open(string_) as file_:
-            return json.load(file_)
+            config = json.load(file_)
+            config['oauth.directory'] = os.getcwd()
+            return config
     except IOError:
         # The following will always be logged on screen, obviously...
         log.critical('Could not open configuration for "{}"'.format(string_))
@@ -140,11 +145,15 @@ def get_roster(config):
         max_start = max_start.isoformat()
     else:
         max_start = None
+    cal_clbk = partial(get_calendar_service,
+                       oauth_dir=config['oauth.directory'])
+    ppl_clbk = partial(get_people_client,
+                       oauth_dir=config['oauth.directory'])
     return Roster(
         name=config['roster.name'],
         cid=config['roster.cid'],
-        cal_service_clbk=get_calendar_service,
-        ppl_client_clbk=get_people_client,
+        cal_service_clbk=cal_clbk,
+        ppl_client_clbk=ppl_clbk,
         min_end=min_end,
         max_start=max_start,
         all_day_offset=config['roster.time_shift'],
@@ -295,10 +304,10 @@ def main():
         run_wizard()
         exit(os.EX_OK)
     config = load_config(cli['<roster>'])
+    modify_logger(cli, config)
     for key in ('--start', '--end', '--at', '<start>', '<end>', '<fuzzy>'):
         if cli[key] is not None:
             cli[key] = dtfy(cli[key], tz=config['roster.time_zone'])
-    modify_logger(cli, config)
     roster = get_roster(config)
     if cli['current'] is True:
         current(roster, cli, config)
