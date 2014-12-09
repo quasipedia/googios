@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+import os.path as path
 from setuptools import setup, find_packages
 
 long_description = '''
@@ -10,15 +13,21 @@ and it can be queried to output information like who is the current person on
 duty, what's their telephone number and email address, as well as getting the
 complete roster between date X and Y.
 
+Licensed under GPLv3+.
+
 Documentation can be found on the public `repository on GitHub`_:
 
 .. _repository on GitHub: https://github.com/quasipedia/googios
 '''
 
+here = path.abspath(path.dirname(__file__))
+with open(path.join(here, 'VERSION')) as f:
+    version = f.read().strip()
+
 setup(
     # Project details
     name='googios',
-    version='0.1',
+    version=version,
     description='Manage your Nagios on-call roster with Google apps',
     long_description=long_description,
     url='https://github.com/quasipedia/googios',
@@ -57,10 +66,9 @@ setup(
         'python-dateutil==2.3',
     ],
 
-    # extras_require = {
-    #     'dev': ['profile'],
-    #     'test': ['coverage', 'nose'],
-    # },
+    extras_require={
+        'dev': ['wheel>=0.24.0'],
+    },
 
     # package_data={
     #     'googios': ['setup-questions.json'],
@@ -68,13 +76,13 @@ setup(
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages.
-    # see http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files
+    # see http://docs.python.org/3.4/distutils/setupscript.html
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
     # data_files=[('my_data', ['data/data_file'])],
 
     entry_points={
         'console_scripts': [
-            'googios=googios:main',
+            'googios=googios.googios:main',
         ],
     },
 )
