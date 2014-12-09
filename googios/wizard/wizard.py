@@ -130,9 +130,14 @@ def pick_time_shift():
 
 def run_wizard():
     '''Run the complete wizard.'''
-    if not validate_directory(os.getcwd()):
+    directory = os.getcwd()
+    if not validate_directory(directory):
         print('Attempt to run the wizard from a non-writable directory')
         exit(os.EX_IOERR)
+    for fname in ('2-legged.oauth', '3-legged.oauth'):
+        if not os.path.exists(fname):
+            print('At least one of the two required .oauth files is missing')
+            exit(os.EX_IOERR)
     logging.disable(logging.ERROR)
     ask('welcome')
     cid, tzone = pick_calendar()
