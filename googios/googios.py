@@ -20,30 +20,33 @@ Options:
     -f --start=<start>   Minimum ending (UTC) of a shift.
     -t --end=<end>       Maximum starting (UTC) of a shift.
 
-The roster:
+The <roster> parameter:
 
     The roster can either be the roster's human-friendly name (if the script
     is ran from the directory with its configuration file) or the full path
     to the configuration file.
 
-Sub- commands:
+Sub-commands:
 
-    setup    Run a wizard for the configuration file generation.
+    setup    Run a wizard for generating a configuration file.
 
     current  Information on the current person on duty.  It is possible to
              limit what information is given by white-listing any number of the
-             5 fields (start, end, name, email, phone).
+             5 fields (start, end, name, email, phone).  If no white-list is
+             provided, all info are printed.
 
-    query    All shifts between <start> and <end>, or at the <at> moment. All
-             parameters are datetime.
+    query    All shifts between <start> and <end>, or at the <at> moment.
+             <start>, <end> and <at> accept a variety of formats, some of whick
+             may be inherently ambiguous (see examples below).
+                 When running a query programmatically, is safer to use the
+             ISO 8601 format (e.g.: 2014-12-09T07:39:22+00:00)
 
     report   Similar to query, but meant for human consumption and with shifts
-             grouped by working day (uses the time_shift value from the
-             configuration).
-                By default it output the report of the previous month, but this
-             can be altered with either the <start> and <end> parameters or
-             with <fuzzy>, which try to fuzzy-match expressions like "october"
-             or "apr 2012".
+             grouped by working day.
+                By default it outputs the report of the previous month, but
+             this can be altered with either the <start> and <end> parameters
+             or with <fuzzy>, which try to fuzzy-match expressions like for
+             example "october" or "apr 2012".
                 `report` groups shifts by day, taking in account the
              "roster.time_shift" parameter in the configuration file.
 
@@ -52,7 +55,7 @@ Sub- commands:
     runway   Return the number of full days for which shifts have been
              *cached* from now onwards.  Note that this subcommand operates on
              the cache (i.e.: not on the live data), the rationale being that
-             `runaway` should tell you what you can count on, even in case of
+             `runaway` should tell you what you can rely on, even in case of
              loss of connectivity.
                  If the time series has "holes" in it, `runway` will return
              the number of full cached days until the first hole, even if more
@@ -60,6 +63,20 @@ Sub- commands:
 
     status   Perform a sanity check of the roster.  Print stats and - in case
              of problems - exit with a non-zero status.
+
+Examples:
+
+    googios setup
+    googios dev update --echo
+    googios dev current name phone
+    googios /var/googios/dev.conf current
+    googios dev query --at='12:30'
+    googios dev query --start='1 nov' --end='5 nov'
+    googios dev query --at='2013-12-11T10:09:08+02:00'
+    googios dev report
+    googios dev report august
+    googios dev runway
+    googios dev status
 '''
 import os
 import json
