@@ -18,6 +18,8 @@ from utils import (
 from calendars import Calendar
 from contacts import Person
 
+NA_TOKEN = '<n/a>'
+
 
 class Shift(object):
 
@@ -31,8 +33,8 @@ class Shift(object):
         end = dtfy(end)
         self.start = start
         self.end = end
-        self.name = name.encode('utf-8')
-        self.email = email.encode('utf-8') or None
+        self.name = None if name is None else name.encode('utf-8')
+        self.email = None if email is None else email.encode('utf-8')
         self.phone = phone or None
 
     def __repr__(self):
@@ -44,8 +46,9 @@ class Shift(object):
 
     @property
     def as_string_tuple(self):
-        return(self.start.isoformat(), self.end.isoformat(), self.name,
-               self.email or '<n/a>', self.phone or '<n/a>')
+        return(self.start.isoformat(), self.end.isoformat(),
+               self.name or NA_TOKEN, self.email or NA_TOKEN,
+               self.phone or NA_TOKEN)
 
 
 class Roster(object):

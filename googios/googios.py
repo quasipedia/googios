@@ -172,13 +172,22 @@ def current(roster, cli, config):
     elif len(shifts) == 0:
         log.error('Nobody is on duty.')
         now = datetime.datetime.now(tz=pytz.UTC)
-        current = Shift(now, now, 'Fallback Team',
-                        config['fallback.email'], config['fallback.phone'])
+        current = Shift(now, now, None, None, None)
     else:
         log.error('Several people where on duty, picking a random one.')
         for counter, shift in enumerate(shifts, 1):
             log.error('On duty #{}: {}'.format(counter, shift))
         current = choice(shifts)
+    # Replace missing fields with fallback ones
+    if not current.email:
+        current.email = config['fallback.email']
+        if current.name is not None:
+            log.error('Missing email address for "{}"'.format(current.name))
+    if not current.phone:
+        current.phone = config['fallback.phone']
+        if current.name is not None:
+            log.error('Missing phone number for "{}"'.format(current.name))
+    current.name = current.name or 'Fallback Contact Details'
     # Compute what fields to output
     fields = ('start', 'end', 'name', 'email', 'phone')
     mask = []
