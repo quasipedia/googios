@@ -232,7 +232,7 @@ class Roster(object):
     def runway(self):
         '''Return the the first future hole in the cache or its end.'''
         frozen = self.now
-        future_shifts = [s for s in self.data if s.end < frozen]
+        future_shifts = [s for s in self.data if s.end > frozen]
         intervals = merge_intervals([(s.start, s.end) for s in future_shifts])
         if intervals[0][0] > self.now:
             return self.now
