@@ -51,8 +51,7 @@ useful if you produce reports or query GooGios for past events]
     'cache.future':
 '''
 How many *future* days of the roster would you like to keep in the cache?
-[The `None` default means all future events (be mindful of recurring events
-without an ending date!!!)]
+[The `None` default means all future events]
 ''',
 
     'cache.directory':

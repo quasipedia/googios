@@ -12,6 +12,9 @@ from collections import namedtuple
 
 from utils import log, dtfy
 
+# This hard limit prevent the query to Google to loop forever, in case there
+# are "repeat forever" recurring events in the calendar
+CACHE_SIZE_HARD_LIMIT = 666
 
 Event = namedtuple('Event', 'start end fuzzy_name')
 
@@ -71,7 +74,7 @@ class Calendar(object):
                                  fix(event['end']),
                                  event['summary']))
             page_token = data.get('nextPageToken')
-            if not page_token:
+            if not page_token or len(ret) >= CACHE_SIZE_HARD_LIMIT:
                 break
         return ret
 
