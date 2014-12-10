@@ -7,7 +7,7 @@ import datetime
 from collections import namedtuple
 
 import pytz
-import dateutil
+import dateutil.parser
 import httplib2
 import dateutil.relativedelta
 from gdata.gauth import OAuth2Token

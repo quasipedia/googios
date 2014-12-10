@@ -4,6 +4,7 @@
 Manage your Nagios on-call roster with Google apps.
 
 Usage:
+    googios --help
     googios setup
     googios <roster> current [start end name email phone] [--echo]
     googios <roster> query [--start=<start> --end=<end>  | --at=<at>] [--echo]
@@ -91,7 +92,7 @@ from dateutil.relativedelta import relativedelta
 from docopt import docopt
 
 from roster import Roster, Shift
-from wizard.wizard import run_wizard
+from wizard.wizard import Wizard
 from utils import (
     log,
     log_format,
@@ -105,7 +106,7 @@ from utils import (
 def load_config(string_):
     '''Load configuration from file.'''
     try:
-        with open('{}.conf'.format(string_)) as file_:
+        with open('{}.config'.format(string_)) as file_:
             config = json.load(file_)
             config['oauth.directory'] = os.path.dirname(string_)
             return config
@@ -139,9 +140,9 @@ def modify_logger(cli, config):
 def get_roster(config):
     '''Return the roster to perform script operations on.'''
     now = datetime.datetime.now(tz=pytz.UTC)
-    min_end = (now - datetime.timedelta(days=config['cache.back'])).isoformat()
-    if config['cache.forward'] is not None:
-        max_start = now + datetime.timedelta(days=config['cache.forward'])
+    min_end = (now - datetime.timedelta(days=config['cache.past'])).isoformat()
+    if config['cache.future'] is not None:
+        max_start = now + datetime.timedelta(days=config['cache.future'])
         max_start = max_start.isoformat()
     else:
         max_start = None
@@ -301,7 +302,12 @@ def status(roster, cli, config):
 def main():
     cli = docopt(__doc__, version='0.1')
     if cli['setup']:
-        run_wizard()
+        # Given that the wizard is always run by a human, and that log messages
+        # would interfere with the wizard output, we disable logging for it.
+        logging.disable(logging)
+        wizard = Wizard()
+        wizard.run()
+        logging.disable(logging.NOTSET)
         exit(os.EX_OK)
     config = load_config(cli['<roster>'])
     modify_logger(cli, config)

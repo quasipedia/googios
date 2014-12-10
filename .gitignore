@@ -56,5 +56,5 @@ target/
 # GooGios
 *.oauth
 *.credentials
-*.conf
+*.config
 *.cache
