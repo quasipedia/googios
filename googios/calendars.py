@@ -53,19 +53,26 @@ class Calendar(object):
         max_start = dtfy(max_start or self.max_start, as_iso_string=True)
         msg = 'Querying calendar for range: {} to {}'
         log.debug(msg.format(min_end, max_start))
-        events = self.service.events().list(
-            calendarId=self.cid,
-            singleEvents=True,
-            timeMin=min_end,
-            timeMax=max_start,
-            orderBy='startTime')
-        data = events.execute()
+        page_token = None
         ret = []
-        fix = self.fix_all_day_long_events
-        for event in data['items']:
-            ret.append(Event(fix(event['start']),
-                             fix(event['end']),
-                             event['summary']))
+        while True:
+            log.debug('Issuing query with page_token = {}'.format(page_token))
+            events = self.service.events().list(
+                calendarId=self.cid,
+                singleEvents=True,
+                timeMin=min_end,
+                timeMax=max_start,
+                orderBy='startTime',
+                pageToken=page_token)
+            data = events.execute()
+            fix = self.fix_all_day_long_events
+            for event in data['items']:
+                ret.append(Event(fix(event['start']),
+                                 fix(event['end']),
+                                 event['summary']))
+            page_token = data.get('nextPageToken')
+            if not page_token:
+                break
         return ret
 
     def fix_all_day_long_events(self, something):
