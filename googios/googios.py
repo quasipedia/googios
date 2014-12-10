@@ -91,7 +91,7 @@ import pytz
 from dateutil.relativedelta import relativedelta
 from docopt import docopt
 
-from roster import Roster, Shift
+from roster import Roster, Shift, NA_TOKEN
 from wizard.wizard import Wizard
 from utils import (
     log,
@@ -272,30 +272,29 @@ def runway(roster, cli, config):
 
 def status(roster, cli, config):
     '''Print statistics on the roster.  Exit with error code if problems.'''
-    stats = roster.stats()
     human_friendly = lambda td: (None if td is None
                                  else td.isoformat()[:16].replace('T', ' '))
+    stats = roster.stats()
+    exit_status = os.EX_OK
+    # Generation of human-readable statistics
     min_end = human_friendly(stats['roster.min_end'])
     max_start = human_friendly(stats['roster.max_start'])
     cache_age = datetime.datetime.now(tz=pytz.UTC) - stats['cache.timestamp']
     cache_age = int(cache_age.total_seconds() / 60)
     cache_size = stats['cache.size']
     cache_end = human_friendly(stats['cache.end'])
-    if stats['cache.fragments'] == 1:
-        integrity = 'OK'
-        exit_status = os.EX_OK
-    elif stats['cache.fragments'] == 0:
-        integrity = 'Empty'
+    num_overlaps = len(stats['cache.overlaps'])
+    num_holes = len(stats['cache.holes'])
+    if num_overlaps:
+        first_overlap = map(human_friendly, stats['cache.overlaps'][0])
         exit_status = os.EX_DATAERR
     else:
-        integrity = 'Broken in {}'.format(stats['cache.fragments'])
+        first_overlap = NA_TOKEN
+    if num_holes:
+        first_hole = map(human_friendly, stats['cache.holes'][0])
         exit_status = os.EX_DATAERR
-    if stats['cache.end'] == stats['cache.first_hole']:
-        first_hole = 'n/a'
-    elif stats['cache.first_hole'] < datetime.datetime.now(tz=pytz.UTC):
-        first_hole = 'Right now'
     else:
-        first_hole = human_friendly(stats['cache.first_hole'])
+        first_hole = NA_TOKEN
     print('\n          R O S T E R   S T A T I S T I C S')
     print('=====================================================\n\n')
     print('  `min_end` query parameter    :  {}'.format(min_end))
@@ -303,8 +302,10 @@ def status(roster, cli, config):
     print('  Cache age                    :  {} mins'.format(cache_age))
     print('  Cache size                   :  {} shifts'.format(cache_size))
     print('  Cache upper limit            :  {}'.format(cache_end))
-    print('  Cache integrity              :  {}'.format(integrity))
-    print('  Cache first hole             :  {}\n'.format(first_hole))
+    print('  Number of roster holes       :  {}'.format(num_holes))
+    print('  Roster first hole            :  {}'.format(first_hole))
+    print('  Number of roster overlaps    :  {}'.format(num_overlaps))
+    print('  Cache first overlap          :  {}\n'.format(first_overlap))
     exit(exit_status)
 
 

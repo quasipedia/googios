@@ -5,6 +5,7 @@ import json
 import logging
 import datetime
 from collections import namedtuple
+from itertools import takewhile
 
 import pytz
 import dateutil.parser
@@ -202,3 +203,18 @@ def merge_intervals(intervals):
         return new_intervals
     else:
         return merge_intervals(new_intervals)
+
+
+def find_overlaps(intervals):
+    '''Given a series of intervals, find what are the overlapping zones.'''
+    sorted_intervals = sorted(intervals)
+    overlaps = []
+    analysed = sorted_intervals.pop(0)
+    while True:
+        overlapping = takewhile(lambda i: i[0] < analysed[1], sorted_intervals)
+        for interval in overlapping:
+            overlaps.append((interval[0], min(interval[1], analysed[1])))
+        if not sorted_intervals:
+            break
+        analysed = sorted_intervals.pop(0)
+    return merge_intervals(overlaps)

@@ -14,6 +14,7 @@ from utils import (
     dtfy,
     plus_one_day,
     merge_intervals,
+    find_overlaps,
 )
 from calendars import Calendar
 from contacts import Person
@@ -218,13 +219,22 @@ class Roster(object):
 
     def stats(self):
         '''Return statistics on the roster.'''
-        intervals = merge_intervals([(s.start, s.end) for s in self.data])
+        intervals = merge_intervals(
+            [(s.start, s.end) for s in self.future_shifts])
+        if len(intervals) < 2:
+            holes = []
+        else:
+            h_starts = (i[1] for i in intervals[:-1])
+            h_ends = (i[0] for i in intervals[1:])
+            holes = zip(h_starts, h_ends)
+        overlaps = find_overlaps(
+            [(s.start, s.end) for s in self.future_shifts])
         stats = {
             'roster.min_end': self.min_end,
             'roster.max_start': self.max_start,
             'cache.size': len(self.data),
-            'cache.fragments': len(intervals),
-            'cache.first_hole': self.runway,
+            'cache.holes': holes,
+            'cache.overlaps': overlaps,
             # The cache end is the max end of any interval
             'cache.end': sorted(intervals, key=lambda tup: tup[1])[-1][1],
             'cache.timestamp': self.cache_timestamp,
@@ -234,9 +244,8 @@ class Roster(object):
     @property
     def runway(self):
         '''Return the the first future hole in the cache or its end.'''
-        frozen = self.now
-        future_shifts = [s for s in self.data if s.end > frozen]
-        intervals = merge_intervals([(s.start, s.end) for s in future_shifts])
+        intervals = merge_intervals(
+            [(s.start, s.end) for s in self.future_shifts])
         if intervals[0][0] > self.now:
             return self.now
         return intervals[0][1]
@@ -245,6 +254,12 @@ class Roster(object):
     def now(self):
         '''Return the datetime of now.'''
         return datetime.now(tz=pytz.UTC)
+
+    @property
+    def future_shifts(self):
+        '''Return a generator with all shifts ending any time after "now".'''
+        frozen = self.now
+        return (s for s in self.data if s.end > frozen)
 
     @property
     def cache_timestamp(self):
