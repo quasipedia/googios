@@ -31,12 +31,12 @@ class Shift(object):
         end = dtfy(end)
         self.start = start
         self.end = end
-        self.name = name
-        self.email = email or None
+        self.name = name.encode('utf-8')
+        self.email = email.encode('utf-8') or None
         self.phone = phone or None
 
     def __repr__(self):
-        return u'Shift({} {} {} {} {})'.format(*self.as_tuple).encode('utf-8')
+        return u'Shift({} {} {} {} {})'.format(*self.as_tuple)
 
     @property
     def as_tuple(self):
@@ -45,7 +45,7 @@ class Shift(object):
     @property
     def as_string_tuple(self):
         return(self.start.isoformat(), self.end.isoformat(), self.name,
-               self.email, self.phone)
+               self.email or '<n/a>', self.phone or '<n/a>')
 
 
 class Roster(object):
