@@ -64,6 +64,7 @@ setup(
         'unicodecsv==0.9.4',
         'pytz==2014.10',
         'python-dateutil==2.3',
+        'clint==0.4.1',
     ],
 
     extras_require={
