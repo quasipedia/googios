@@ -5,7 +5,6 @@ Manage the Shifts, combining information from both calendar and contacts.
 '''
 import os
 from datetime import datetime, timedelta
-from itertools import dropwhile
 
 import pytz
 import unicodecsv as csv
@@ -37,7 +36,7 @@ class Shift(object):
         self.phone = phone or None
 
     def __repr__(self):
-        return 'Shift({} {} {} {} {})'.format(*self.as_tuple)
+        return u'Shift({} {} {} {} {})'.format(*self.as_tuple).encode('utf-8')
 
     @property
     def as_tuple(self):
@@ -232,7 +231,8 @@ class Roster(object):
     @property
     def runway(self):
         '''Return the the first future hole in the cache or its end.'''
-        future_shifts = list(dropwhile(lambda s: s.end < self.now, self.data))
+        frozen = self.now
+        future_shifts = [s for s in self.data if s.end < frozen]
         intervals = merge_intervals([(s.start, s.end) for s in future_shifts])
         if intervals[0][0] > self.now:
             return self.now
