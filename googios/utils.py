@@ -24,9 +24,7 @@ MockArgparseFlags = namedtuple(
     'logging_level noauth_local_webserver'
 )
 
-# The logging level must be a string because of the poor API design choices of
-# by Google Inc. (See: http://goo.gl/8yOJeq)
-LOGGING_LEVEL = 'INFO'
+ON_SCREEN_LOGGING_LEVEL = logging.DEBUG  # Used only when `googios ... --echo`
 AGENT_NAME = 'GooGios'
 SCOPES = {
     'calendar': 'https://www.googleapis.com/auth/calendar.readonly',
@@ -40,7 +38,7 @@ log_stream_handler = logging.StreamHandler()
 log_stream_handler.setFormatter(log_format)
 log = logging.getLogger('googios')
 log.addHandler(log_stream_handler)
-log.setLevel(LOGGING_LEVEL)
+log.setLevel(ON_SCREEN_LOGGING_LEVEL)
 
 # Store cached values of the service/client once initialised
 __cal_service = None
@@ -106,7 +104,8 @@ class ThreeLeggedOauth(object):
                 'xoauth_displayname': AGENT_NAME,
             }
             flow = OAuth2WebServerFlow(**kwargs)
-            flags = MockArgparseFlags(LOGGING_LEVEL, True)
+            log_level_string = logging.getLevelName(log.level)
+            flags = MockArgparseFlags(log_level_string, True)
             credentials = run_flow(flow, storage, flags)
             storage.put(credentials)
         elif credentials.access_token_expired:
