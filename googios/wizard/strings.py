@@ -74,13 +74,18 @@ resource should everything else fail?
 
     'log.directory':
 '''
-In what directory should your `{}.log` log file be saved?
+In what directory should your `{}.log` file be saved?
 ''',
 
     'log.level':
 '''
 What is the minimum level of messages that you would like to log?
 Possible choices are DEBUG, INFO, WARNING, ERROR, CRITICAL
+''',
+
+    'credentials':
+'''
+You now need to generate a secret token for accessing the contacts.
 ''',
 
     'done':
@@ -96,10 +101,10 @@ FINAL_DISCLAIMER = '''
 *******************************************************************************
     Remember to add the cache-downloading job to your crontab!
 
-        `googios {} update`
+        `googios {name} update`
 
     You may also wish to create nagios tasks for monitoring:
-    - The return value of `googios {} runway`
-    - The exit code of `googios {} status`
+    - The return value of `googios {name} runway`
+    - The exit code of `googios {name} status`
 *******************************************************************************
 '''

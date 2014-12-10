@@ -148,7 +148,7 @@ class Wizard(object):
         options = list(map(str, range(24)))
         question = 'Choose a number of hours (integer between 0 and 23)'
         validator = partial(self.validate_options, options=options)
-        choice = prompt.query(question, 0, [validator])
+        choice = prompt.query(question, '0', [validator])
         self.config['roster.time_shift'] = int(choice)
 
     def pick_log_level(self):
@@ -164,6 +164,8 @@ class Wizard(object):
     def finish(self):
         '''Save the configuration and generate the 3-legged token.'''
         # Save the configuration
+        self.current_step += 1
+        self.display('credentials', ())
         name = self.config['roster.name']
         self.config_fname = '{}.config'.format(name)
         with open(self.config_fname, 'w') as file_:
@@ -200,15 +202,16 @@ class Wizard(object):
         self.step('oauth.directory')
         self.pick_calendar()
         self.step('roster.name')
+        name = self.config['roster.name']
         self.pick_time_shift()
         self.step('cache.timeout')
         self.step('cache.past')
         self.step('cache.future')
-        self.step('cache.directory', msg_args=[self.config['roster.name']])
+        self.step('cache.directory', msg_args=[name])
         self.step('fallback.email')
         self.step('fallback.phone')
-        self.step('log.directory', msg_args=[self.config['roster.name']])
+        self.step('log.directory', msg_args=[name])
         self.pick_log_level()
         self.finish()
-        self.step('done', msg_args=[self.config_fname])
-        red('\n{}\n'.format(FINAL_DISCLAIMER))
+        self.step('done', msg_args=[name])
+        red('{}\n'.format(FINAL_DISCLAIMER.format(name=name)))
